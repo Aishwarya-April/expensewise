@@ -4,7 +4,8 @@ const expenseSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required: true,
+        index: true
     },
     title: {
         type: String,
@@ -34,5 +35,15 @@ const expenseSchema = new mongoose.Schema({
         trim: true
     }
 }, { timestamps: true });
+
+// define a virtual for convenience so we can populate('user') if desired
+expenseSchema.virtual('user', {
+    ref: 'User',
+    localField: 'userId',
+    foreignField: '_id',
+    justOne: true
+});
+
+module.exports = mongoose.model('Expense', expenseSchema);
 
 module.exports = mongoose.model('Expense', expenseSchema);

@@ -5,12 +5,9 @@ const jwt = require('jsonwebtoken');
 const JWT_SECRET = process.env.JWT_SECRET || 'expensewise_jwt';
 const User = require('../models/User');
 const Expense = require('../models/Expense');
-const MockDB = require('../models/MockDB');
-
-// Initialize global useMockDB flag if not set
-if (typeof global.useMockDB === 'undefined') {
-    global.useMockDB = false;
-}
+// Note: MockDB support was removed to prevent inconsistent data storage.
+// Backend now relies solely on MongoDB; any connection failures are surfaced
+// to the user so the root issue can be fixed.
 
 router.get('/', (req, res) => {
     const user = req.session.user || null;
@@ -35,30 +32,24 @@ router.post('/register', async (req, res) => {
             return res.render('register', { user: null, error: 'Password must be at least 6 characters' });
         }
         
-        let existingUser, newUser;
-        
-        if (global.useMockDB) {
-            existingUser = await MockDB.findUserByEmail(email);
-            if (existingUser) {
-                return res.render('register', { user: null, error: 'Email already registered. Please login.' });
-            }
-            const hashedPassword = await bcrypt.hash(password, 10);
-            newUser = await MockDB.createUser({ name, email, password: hashedPassword });
-        } else {
-            try {
-                existingUser = await User.findOne({ email });
-                if (existingUser) {
-                    return res.render('register', { user: null, error: 'Email already registered. Please login.' });
-                }
-                const hashedPassword = await bcrypt.hash(password, 10);
-                newUser = new User({ name, email, password: hashedPassword });
-                await newUser.save();
-            } catch (dbError) {
-                console.log('📝 DB operation failed, switching to mock DB:', dbError.message);
-                global.useMockDB = true;
-                const hashedPassword = await bcrypt.hash(password, 10);
-                newUser = await MockDB.createUser({ name, email, password: hashedPassword });
-            }
+        // always use MongoDB for user creation; propagate errors to client
+        let existingUser;
+        try {
+            existingUser = await User.findOne({ email });
+        } catch (dbError) {
+            console.error('DB error during registration lookup:', dbError);
+            return res.render('register', { user: null, error: 'Database error. Please try again later.' });
+        }
+        if (existingUser) {
+            return res.render('register', { user: null, error: 'Email already registered. Please login.' });
+        }
+        const hashedPassword = await bcrypt.hash(password, 10);
+        const newUser = new User({ name, email, password: hashedPassword });
+        try {
+            await newUser.save();
+        } catch (dbError) {
+            console.error('DB error saving new user:', dbError);
+            return res.render('register', { user: null, error: 'Failed to create account. Try again later.' });
         }
         
         const token = jwt.sign(
@@ -66,7 +57,7 @@ router.post('/register', async (req, res) => {
             JWT_SECRET,
             { expiresIn: '24h' }
         );
-        req.session.user = { id: newUser._id, name: newUser.name, email: newUser.email };
+        req.session.user = { id: newUser._id, name: newUser.name, email: newUser.email, preferredCurrency: newUser.preferredCurrency || 'INR' };
         req.session.token = token;
         // Ensure session is saved before redirect so the cookie is set reliably
         req.session.save(err => {
@@ -93,18 +84,12 @@ router.post('/login', async (req, res) => {
         }
         
         let user;
-        if (global.useMockDB) {
-            user = await MockDB.findUserByEmail(email);
-        } else {
-            try {
-                user = await User.findOne({ email });
-            } catch (dbError) {
-                console.log('📝 DB operation failed, switching to mock DB:', dbError.message);
-                global.useMockDB = true;
-                user = await MockDB.findUserByEmail(email);
-            }
+        try {
+            user = await User.findOne({ email });
+        } catch (dbError) {
+            console.error('DB error while looking up user on login:', dbError);
+            return res.render('login', { user: null, error: 'Database error. Please try again.' });
         }
-        
         if (!user) {
             return res.render('login', { user: null, error: 'No account found with this email' });
         }
@@ -117,7 +102,7 @@ router.post('/login', async (req, res) => {
             JWT_SECRET,
             { expiresIn: '24h' }
         );
-        req.session.user = { id: user._id, name: user.name, email: user.email };
+        req.session.user = { id: user._id, name: user.name, email: user.email, preferredCurrency: user.preferredCurrency || 'INR' };
         req.session.token = token;
         // Ensure session is saved before redirect so the cookie is set reliably
         req.session.save(err => {
@@ -131,25 +116,13 @@ router.post('/login', async (req, res) => {
     }
 });
 
-router.get('/dashboard', async (req, res) => {
-    if (!req.session.user) return res.redirect('/login');
+const authMiddleware = require('../middleware/authMiddleware');
+
+router.get('/dashboard', authMiddleware, async (req, res) => {
+    // authMiddleware redirects to login if session invalid
     try {
         const userId = req.session.user.id;
-        let expenses;
-        
-        if (global.useMockDB) {
-            expenses = await MockDB.findExpensesByUserId(userId);
-        } else {
-            try {
-                expenses = await Expense.find({ userId }).sort({ date: -1 });
-            } catch (dbError) {
-                console.log('📝 DB operation failed, switching to mock DB:', dbError.message);
-                global.useMockDB = true;
-                expenses = await MockDB.findExpensesByUserId(userId);
-            }
-        }
-        
-        expenses = expenses || [];
+        const expenses = await Expense.find({ userId }).sort({ date: -1 });
         let totalIncome = 0;
         let totalExpense = 0;
         expenses.forEach(exp => {
@@ -168,6 +141,16 @@ router.get('/dashboard', async (req, res) => {
         console.error('Dashboard error:', error);
         res.redirect('/login');
     }
+});
+
+// dedicated analytics page uses client-side fetch of /api/expenses/stats
+router.get('/analytics', authMiddleware, (req, res) => {
+    res.render('analytics', { user: req.session.user });
+});
+
+// currency converter page
+router.get('/converter', authMiddleware, (req, res) => {
+    res.render('converter', { user: req.session.user });
 });
 
 router.get('/logout', (req, res) => {

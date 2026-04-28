@@ -1,10 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Expense = require('../models/Expense');
-const MockDB = require('../models/MockDB');
-
-// Detect if using mock DB
-const isMockDB = () => global.setUseMockDB && typeof global.setUseMockDB === 'function' || false;
+// note: mock DB support removed to avoid inconsistent user data storage
 
 router.get('/add', (req, res) => {
     if (!req.session.user) return res.redirect('/login');
@@ -21,49 +18,22 @@ router.post('/add', async (req, res) => {
                 error: 'All fields are required'
             });
         }
-        
-        // Check if using mock DB via global flag
-        const useMockDB = typeof global.useMockDB !== 'undefined' ? global.useMockDB : false;
-        
-        try {
-            if (useMockDB) {
-                await MockDB.createExpense({
-                    userId: req.session.user.id,
-                    title,
-                    amount: parseFloat(amount),
-                    type,
-                    category,
-                    date: date ? new Date(date) : new Date(),
-                    note
-                });
-            } else {
-                const newExpense = new Expense({
-                    userId: req.session.user.id,
-                    title,
-                    amount: parseFloat(amount),
-                    type,
-                    category,
-                    date: date || Date.now(),
-                    note
-                });
-                await newExpense.save();
-            }
-        } catch (dbError) {
-            console.log('DB operation failed, trying mock DB:', dbError.message);
-            global.useMockDB = true;
-            await MockDB.createExpense({
-                userId: req.session.user.id,
-                title,
-                amount: parseFloat(amount),
-                type,
-                category,
-                date: date ? new Date(date) : new Date(),
-                note
-            });
-        }
+        const userId = req.session.user.id;
+        const newExpense = new Expense({
+            userId,
+            title,
+            amount: parseFloat(amount),
+            type,
+            category,
+            date: date ? new Date(date) : Date.now(),
+            note
+        });
+        await newExpense.save();
+        const User = require('../models/User');
+        await User.findByIdAndUpdate(userId, { $push: { transactions: newExpense._id } });
         res.redirect('/dashboard');
     } catch (error) {
-        console.error(error);
+        console.error('Error creating expense:', error);
         res.render('add-expense', { user: req.session.user, error: 'Something went wrong' });
     }
 });
@@ -71,18 +41,13 @@ router.post('/add', async (req, res) => {
 router.get('/delete/:id', async (req, res) => {
     if (!req.session.user) return res.redirect('/login');
     try {
-        const useMockDB = typeof global.useMockDB !== 'undefined' ? global.useMockDB : false;
-        
-        try {
-            if (useMockDB) {
-                await MockDB.deleteExpense(parseInt(req.params.id));
-            } else {
-                await Expense.findByIdAndDelete(req.params.id);
-            }
-        } catch (dbError) {
-            console.log('DB operation failed, trying mock DB:', dbError.message);
-            global.useMockDB = true;
-            await MockDB.deleteExpense(parseInt(req.params.id));
+        const userId = req.session.user.id;
+        // only delete a transaction belonging to the logged-in user
+        const deleted = await Expense.findOneAndDelete({ _id: req.params.id, userId });
+        if (deleted) {
+            // remove reference from user document as well
+            const User = require('../models/User');
+            await User.findByIdAndUpdate(userId, { $pull: { transactions: deleted._id } });
         }
         res.redirect('/dashboard');
     } catch (error) {

@@ -17,6 +17,13 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: true,
         minlength: 6
+    },
+    // keep references to related transactions for quick population
+    transactions: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Expense' }],
+    // optionally remember the currency last selected by the user
+    preferredCurrency: {
+        type: String,
+        default: 'INR'
     }
 }, { timestamps: true });
 

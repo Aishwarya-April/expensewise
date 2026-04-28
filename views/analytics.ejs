@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analytics - ExpenseWise</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="/">
+            <i class="fas fa-wallet me-2"></i>ExpenseWise
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto align-items-center">
+                <li class="nav-item"><a class="nav-link" href="/dashboard"><i class="fas fa-chart-pie me-1"></i>Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" href="/analytics"><i class="fas fa-chart-bar me-1"></i>Analytics</a></li>
+                <li class="nav-item"><a class="nav-link" href="/converter"><i class="fas fa-exchange-alt me-1"></i>Converter</a></li>
+                <li class="nav-item"><a class="nav-link" href="/expenses/add"><i class="fas fa-plus-circle me-1"></i>Add</a></li>
+                <li class="nav-item ms-2">
+                    <button class="btn btn-sm" id="darkModeToggle" style="background:#2c3e50; color:white; border-radius:20px; padding: 6px 16px;">
+                        <i class="fas fa-moon me-1"></i>Dark
+                    </button>
+                </li>
+                <li class="nav-item ms-2">
+                    <a class="btn btn-sm" href="/logout" style="background:#e74c3c; color:white; border-radius:20px; padding: 6px 16px;">
+                        <i class="fas fa-sign-out-alt me-1"></i>Logout
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+<section class="dashboard-section">
+    <div class="container">
+        <div class="mb-4">
+            <h3 class="fw-bold">Analytics</h3>
+            <p class="text-muted">Visualize your income and expenses</p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-6">
+                <div class="card p-3">
+                    <h5>Category-wise Expenses</h5>
+                    <canvas id="categoryChart"></canvas>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card p-3">
+                    <h5>Balance Over Time (Monthly)</h5>
+                    <canvas id="monthlyChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/darkmode.js"></script>
+<script>
+async function loadAnalytics() {
+    try {
+        const resp = await fetch('/api/expenses/stats');
+        const json = await resp.json();
+        if (!json.success) return;
+        const byCategory = json.breakdown || [];
+        const monthly = json.monthly || [];
+
+        // Category doughnut
+        const catCtx = document.getElementById('categoryChart').getContext('2d');
+        new Chart(catCtx, {
+            type: 'doughnut',
+            data: {
+                labels: byCategory.map(b => b._id),
+                datasets: [{ data: byCategory.map(b => b.total), backgroundColor: ['#FF6384','#36A2EB','#FFCE56','#4BC0C0','#9966FF','#FF9F40'] }]
+            }
+        });
+
+        // Monthly line chart
+        const labels = monthly.map(m => `${m._id.year}-${String(m._id.month).padStart(2,'0')}`);
+        const data = monthly.map(m => m.total);
+        const monCtx = document.getElementById('monthlyChart').getContext('2d');
+        new Chart(monCtx, {
+            type: 'line',
+            data: { labels, datasets: [{ label: 'Total', data, borderColor: '#36A2EB', fill: false }] },
+            options: { responsive: true }
+        });
+    } catch (e) {
+        console.error('Analytics load error', e);
+    }
+}
+
+loadAnalytics();
+</script>
+</body>
+</html>

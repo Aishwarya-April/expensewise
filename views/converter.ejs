@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Converter - ExpenseWise</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav class="navbar navbar-expand-lg navbar-dark">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="/">
+            <i class="fas fa-wallet me-2"></i>ExpenseWise
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav ms-auto align-items-center">
+                <li class="nav-item"><a class="nav-link" href="/dashboard"><i class="fas fa-chart-pie me-1"></i>Dashboard</a></li>
+                <li class="nav-item"><a class="nav-link" href="/analytics"><i class="fas fa-chart-bar me-1"></i>Analytics</a></li>
+                <li class="nav-item"><a class="nav-link" href="/converter"><i class="fas fa-exchange-alt me-1"></i>Converter</a></li>
+                <li class="nav-item"><a class="nav-link" href="/expenses/add"><i class="fas fa-plus-circle me-1"></i>Add</a></li>
+                <li class="nav-item ms-2">
+                    <button class="btn btn-sm" id="darkModeToggle" style="background:#2c3e50; color:white; border-radius:20px; padding: 6px 16px;">
+                        <i class="fas fa-moon me-1"></i>Dark
+                    </button>
+                </li>
+                <li class="nav-item ms-2">
+                    <a class="btn btn-sm" href="/logout" style="background:#e74c3c; color:white; border-radius:20px; padding: 6px 16px;">
+                        <i class="fas fa-sign-out-alt me-1"></i>Logout
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<section class="dashboard-section">
+    <div class="container">
+        <div class="mb-4">
+            <h3 class="fw-bold">Currency Converter</h3>
+            <p class="text-muted">Convert an amount or convert your financial totals to a different currency.</p>
+        </div>
+
+        <div class="row g-4">
+            <!-- Currency Converter Card -->
+            <div class="col-md-6">
+                <div class="card p-4" style="border-radius: 15px; box-shadow: 0 3px 15px rgba(0,0,0,0.08);">
+                    <h5 class="fw-bold mb-3"><i class="fas fa-exchange-alt me-2"></i>Convert an Amount</h5>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-600">Amount</label>
+                        <input id="amount" type="number" class="form-control" value="1" min="0" step="0.01"
+                               style="border-radius: 10px; padding: 10px 15px;">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-600">From Currency</label>
+                        <select id="fromCurrency" class="form-select" style="border-radius: 10px; padding: 10px 15px;">
+                            <option value="">Select currency...</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-600">To Currency</label>
+                        <select id="toCurrency" class="form-select" style="border-radius: 10px; padding: 10px 15px;">
+                            <option value="">Select currency...</option>
+                        </select>
+                    </div>
+
+                    <button id="convertBtn" class="btn btn-primary w-100" style="border-radius: 10px; padding: 10px; font-weight: 600;">
+                        <i class="fas fa-exchange-alt me-2"></i>Convert
+                    </button>
+
+                    <div class="mt-4 p-3" style="background: #f8f9fa; border-radius: 10px; border-left: 4px solid #00d4aa;">
+                        <small class="text-muted">Result:</small>
+                        <div class="h5 fw-bold" id="convertResult" style="color: #00d4aa;">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Convert Totals Card -->
+            <div class="col-md-6">
+                <div class="card p-4" style="border-radius: 15px; box-shadow: 0 3px 15px rgba(0,0,0,0.08);">
+                    <h5 class="fw-bold mb-3"><i class="fas fa-calculator me-2"></i>Convert Your Totals</h5>
+                    <p class="text-muted small mb-3">View your total income, expenses, and balance in any currency.</p>
+                    
+                    <div class="mb-3">
+                        <label class="form-label fw-600">Select Target Currency</label>
+                        <select id="targetCurrency" class="form-select" style="border-radius: 10px; padding: 10px 15px;">
+                            <option value="">Select currency...</option>
+                        </select>
+                    </div>
+
+                    <button id="convertTotalsBtn" class="btn btn-success w-100" style="border-radius: 10px; padding: 10px; font-weight: 600;">
+                        <i class="fas fa-calculator me-2"></i>Show Converted Totals
+                    </button>
+
+                    <div class="mt-4" id="totalsResult" style="display: none;">
+                        <div class="p-3 mb-2" style="background: linear-gradient(135deg, #3498db, #2980b9); border-radius: 10px; color: white;">
+                            <small>Total Income</small>
+                            <div class="h5 fw-bold mb-0" id="incomeVal">-</div>
+                        </div>
+                        <div class="p-3 mb-2" style="background: linear-gradient(135deg, #e74c3c, #c0392b); border-radius: 10px; color: white;">
+                            <small>Total Expenses</small>
+                            <div class="h5 fw-bold mb-0" id="expenseVal">-</div>
+                        </div>
+                        <div class="p-3" style="background: linear-gradient(135deg, #00d4aa, #00b894); border-radius: 10px; color: white;">
+                            <small>Balance</small>
+                            <div class="h5 fw-bold mb-0" id="balanceVal">-</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/darkmode.js"></script>
+<script>
+    let currenciesData = [];
+    const userPreferredCurrency = '<%= (user && user.preferredCurrency) || "INR" %>';
+
+    // Load currencies on page load
+    async function loadCurrencies() {
+        try {
+            const resp = await fetch('/api/currencies');
+            const json = await resp.json();
+            if (!json.success) return;
+            currenciesData = json.currencies;
+            populateCurrencySelects();
+        } catch (e) {
+            console.error('Failed to load currencies:', e);
+            alert('Failed to load currencies. Please reload.');
+        }
+    }
+
+    function populateCurrencySelects() {
+        const selects = ['fromCurrency', 'toCurrency', 'targetCurrency'];
+        
+        selects.forEach(selectId => {
+            const select = document.getElementById(selectId);
+            const currentValue = select.value;
+            
+            // Clear existing options except the first one
+            while (select.options.length > 1) {
+                select.remove(1);
+            }
+            
+            // Add currencies
+            currenciesData.forEach(curr => {
+                const option = document.createElement('option');
+                option.value = curr.code;
+                option.textContent = `${curr.code} – ${curr.name}`;
+                select.appendChild(option);
+            });
+
+            // Set default values
+            if (selectId === 'fromCurrency' || selectId === 'targetCurrency') {
+                select.value = userPreferredCurrency;
+            } else if (selectId === 'toCurrency') {
+                select.value = 'USD';
+            }
+        });
+    }
+
+    // Convert single amount
+    document.getElementById('convertBtn').addEventListener('click', async () => {
+        const amount = Number(document.getElementById('amount').value || 0);
+        const from = document.getElementById('fromCurrency').value;
+        const to = document.getElementById('toCurrency').value;
+        
+        if (!from || !to) {
+            alert('Please select both currencies');
+            return;
+        }
+
+        if (amount <= 0) {
+            alert('Please enter a valid amount');
+            return;
+        }
+
+        try {
+            const resp = await fetch(`/api/convert?amount=${amount}&from=${from}&to=${to}`);
+            const res = await resp.json();
+            
+            if (res.success) {
+                const toCurr = currenciesData.find(c => c.code === to);
+                const symbol = toCurr ? toCurr.symbol : to;
+                document.getElementById('convertResult').textContent = `${symbol} ${parseFloat(res.result).toLocaleString('en-IN', {minimumFractionDigits: 2})}`;
+            } else {
+                document.getElementById('convertResult').textContent = 'Conversion failed: ' + res.message;
+            }
+        } catch (e) {
+            console.error('Conversion error:', e);
+            document.getElementById('convertResult').textContent = 'Error during conversion';
+        }
+    });
+
+    // Fetch user totals
+    async function fetchTotals() {
+        try {
+            const resp = await fetch('/api/expenses');
+            const json = await resp.json();
+            if (!json.success) return null;
+            
+            const expenses = json.expenses || [];
+            const totals = { income: 0, expense: 0 };
+            
+            expenses.forEach(exp => {
+                if (exp.type === 'income') totals.income += Number(exp.amount || 0);
+                else if (exp.type === 'expense') totals.expense += Number(exp.amount || 0);
+            });
+            
+            totals.balance = totals.income - totals.expense;
+            return totals;
+        } catch (e) {
+            console.error('Error fetching totals:', e);
+            return null;
+        }
+    }
+
+    // Convert totals to selected currency
+    document.getElementById('convertTotalsBtn').addEventListener('click', async () => {
+        const targetCurr = document.getElementById('targetCurrency').value;
+        
+        if (!targetCurr) {
+            alert('Please select a currency');
+            return;
+        }
+
+        try {
+            const totals = await fetchTotals();
+            if (!totals) {
+                alert('Failed to fetch your totals');
+                return;
+            }
+
+            // Get conversion rates
+            const [incRes, expRes, balRes] = await Promise.all([
+                fetch(`/api/convert?amount=${totals.income}&from=${userPreferredCurrency}&to=${targetCurr}`).then(r => r.json()),
+                fetch(`/api/convert?amount=${totals.expense}&from=${userPreferredCurrency}&to=${targetCurr}`).then(r => r.json()),
+                fetch(`/api/convert?amount=${totals.balance}&from=${userPreferredCurrency}&to=${targetCurr}`).then(r => r.json())
+            ]);
+
+            const currObj = currenciesData.find(c => c.code === targetCurr);
+            const symbol = currObj ? currObj.symbol : targetCurr;
+
+            const formatAmount = (val) => parseFloat(val).toLocaleString('en-IN', {minimumFractionDigits: 2});
+
+            document.getElementById('incomeVal').textContent = 
+                incRes.success ? `${symbol} ${formatAmount(incRes.result)}` : 'N/A';
+            document.getElementById('expenseVal').textContent = 
+                expRes.success ? `${symbol} ${formatAmount(expRes.result)}` : 'N/A';
+            document.getElementById('balanceVal').textContent = 
+                balRes.success ? `${symbol} ${formatAmount(balRes.result)}` : 'N/A';
+
+            document.getElementById('totalsResult').style.display = 'block';
+        } catch (e) {
+            console.error('Error converting totals:', e);
+            alert('Failed to convert totals');
+        }
+    });
+
+    // Initialize on page load
+    loadCurrencies();
+</script>
+</body>
+</html>

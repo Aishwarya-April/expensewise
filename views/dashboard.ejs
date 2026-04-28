@@ -8,7 +8,7 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <!-- Chart.js not needed on main dashboard (moved to Analytics page) -->
 </head>
 <body>
 
@@ -29,8 +29,18 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" href="/analytics">
+                        <i class="fas fa-chart-bar me-1"></i>Analytics
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/converter">
+                        <i class="fas fa-exchange-alt me-1"></i>Converter
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" href="/expenses/add">
-                        <i class="fas fa-plus-circle me-1"></i>Add Transaction
+                        <i class="fas fa-plus-circle me-1"></i>Add
                     </a>
                 </li>
                 <li class="nav-item ms-2">
@@ -65,7 +75,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <div class="stat-label">Total Balance</div>
-                            <div class="stat-amount">₹<%= (typeof balance === 'number' ? balance.toFixed(2) : '0.00') %></div>
+                            <div class="stat-amount">₹0.00</div>
                         </div>
                         <div class="stat-icon"><i class="fas fa-wallet"></i></div>
                     </div>
@@ -76,7 +86,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <div class="stat-label">Total Income</div>
-                            <div class="stat-amount">₹<%= (typeof totalIncome === 'number' ? totalIncome.toFixed(2) : '0.00') %></div>
+                            <div class="stat-amount">₹0.00</div>
                         </div>
                         <div class="stat-icon"><i class="fas fa-arrow-circle-up"></i></div>
                     </div>
@@ -87,7 +97,7 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <div>
                             <div class="stat-label">Total Expenses</div>
-                            <div class="stat-amount">₹<%= (typeof totalExpense === 'number' ? totalExpense.toFixed(2) : '0.00') %></div>
+                            <div class="stat-amount">₹0.00</div>
                         </div>
                         <div class="stat-icon"><i class="fas fa-arrow-circle-down"></i></div>
                     </div>
@@ -123,141 +133,11 @@
                     </div>
 
                     <div id="transactionList">
-                        <% if (!expenses || expenses.length === 0) { %>
-                            <div class="text-center py-5 text-muted">
-                                <i class="fas fa-receipt fa-3x mb-3"></i>
-                                <p>No transactions yet. Add your first one!</p>
-                                <a href="/expenses/add" class="btn btn-primary">
-                                    <i class="fas fa-plus me-1"></i>Add Transaction
-                                </a>
-                            </div>
-                        <% } else { %>
-                            <% (expenses || []).slice(0, 10).forEach(exp => { %>
-                                <div class="transaction-item" data-category="<%= exp.category %>">
-                                    <div class="d-flex align-items-center">
-                                        <div class="me-3" style="width:40px; height:40px; border-radius:50%; background:<%= exp.type === 'income' ? '#e8faf5' : '#fde8e8' %>; display:flex; align-items:center; justify-content:center;">
-                                            <i class="fas <%= exp.type === 'income' ? 'fa-arrow-up' : 'fa-arrow-down' %>" style="color:<%= exp.type === 'income' ? '#00d4aa' : '#e74c3c' %>"></i>
-                                        </div>
-                                        <div>
-                                            <div class="fw-500"><%= exp.title || '' %></div>
-                                            <small class="text-muted"><%= (exp.category || '') %> • <%= new Date(exp.date || Date.now()).toLocaleDateString() %></small>
-                                        </div>
-                                    </div>
-                                    <div class="d-flex align-items-center">
-                                            <span class="<%= (exp && exp.type) === 'income' ? 'amount-income' : 'amount-expense' %> me-3">
-                                            <%= (exp && exp.type) === 'income' ? '+' : '-' %>₹<%= (exp && typeof exp.amount === 'number' ? exp.amount.toFixed(2) : '0.00') %>
-                                        </span>
-                                        <a href="/expenses/delete/<%= exp._id %>" 
-                                           onclick="return confirm('Delete this transaction?')"
-                                           class="btn btn-sm btn-outline-danger">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
-                                    </div>
-                                </div>
-                            <% }) %>
-                        <% } %>
+                        <!-- transactions will be rendered by JavaScript -->
                     </div>
                 </div>
             </div>
 
-            <!-- ANALYTICS & CONVERTER -->
-            <div class="col-md-4">
-                <!-- Charts -->
-                <div class="converter-card mb-4">
-                    <h5 class="fw-bold mb-3">
-                        <i class="fas fa-chart-pie me-2"></i>Expense Breakdown
-                    </h5>
-                    <canvas id="categoryChart" style="max-height: 250px;"></canvas>
-                </div>
-
-                <!-- CURRENCY CONVERTER -->
-                <div class="converter-card">
-                    <h5 class="fw-bold mb-3">
-                        <i class="fas fa-exchange-alt me-2"></i>Currency Converter
-                    </h5>
-                    <div class="mb-3">
-                        <label class="form-label text-white-50">Amount (₹)</label>
-                        <input type="number" class="form-control" id="convertAmount" 
-                               placeholder="Enter amount" value="1000">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label text-white-50">Convert To</label>
-                        <select class="form-select" id="targetCurrency">
-                            <!-- Americas -->
-                            <optgroup label="🌎 Americas">
-                                <option value="USD">🇺🇸 USD - US Dollar</option>
-                                <option value="CAD">🇨🇦 CAD - Canadian Dollar</option>
-                                <option value="MXN">🇲🇽 MXN - Mexican Peso</option>
-                                <option value="BRL">🇧🇷 BRL - Brazilian Real</option>
-                                <option value="ARS">🇦🇷 ARS - Argentine Peso</option>
-                                <option value="CLP">🇨🇱 CLP - Chilean Peso</option>
-                            </optgroup>
-                            
-                            <!-- Europe -->
-                            <optgroup label="🌍 Europe">
-                                <option value="EUR">🇪🇺 EUR - Euro</option>
-                                <option value="GBP">🇬🇧 GBP - British Pound</option>
-                                <option value="CHF">🇨🇭 CHF - Swiss Franc</option>
-                                <option value="SEK">🇸🇪 SEK - Swedish Krona</option>
-                                <option value="NOK">🇳🇴 NOK - Norwegian Krone</option>
-                                <option value="DKK">🇩🇰 DKK - Danish Krone</option>
-                                <option value="PLN">🇵🇱 PLN - Polish Zloty</option>
-                                <option value="CZK">🇨🇿 CZK - Czech Koruna</option>
-                                <option value="HUF">🇭🇺 HUF - Hungarian Forint</option>
-                                <option value="RON">🇷🇴 RON - Romanian Leu</option>
-                                <option value="BGN">🇧🇬 BGN - Bulgarian Lev</option>
-                                <option value="HRK">🇭🇷 HRK - Croatian Kuna</option>
-                                <option value="RUB">🇷🇺 RUB - Russian Ruble</option>
-                                <option value="UAH">🇺🇦 UAH - Ukrainian Hryvnia</option>
-                                <option value="GEL">🇬🇪 GEL - Georgian Lari</option>
-                            </optgroup>
-                            
-                            <!-- Asia-Pacific -->
-                            <optgroup label="🌏 Asia-Pacific">
-                                <option value="JPY">🇯🇵 JPY - Japanese Yen</option>
-                                <option value="CNY">🇨🇳 CNY - Chinese Yuan</option>
-                                <option value="KRW">🇰🇷 KRW - Korean Won</option>
-                                <option value="TWD">🇹🇼 TWD - Taiwan Dollar</option>
-                                <option value="HKD">🇭🇰 HKD - Hong Kong Dollar</option>
-                                <option value="SGD">🇸🇬 SGD - Singapore Dollar</option>
-                                <option value="MYR">🇲🇾 MYR - Malaysian Ringgit</option>
-                                <option value="THB">🇹🇭 THB - Thai Baht</option>
-                                <option value="IDR">🇮🇩 IDR - Indonesian Rupiah</option>
-                                <option value="PHP">🇵🇭 PHP - Philippine Peso</option>
-                                <option value="VND">🇻🇳 VND - Vietnamese Dong</option>
-                                <option value="AUD">🇦🇺 AUD - Australian Dollar</option>
-                                <option value="NZD">🇳🇿 NZD - New Zealand Dollar</option>
-                                <option value="PKR">🇵🇰 PKR - Pakistani Rupee</option>
-                                <option value="BDT">🇧🇩 BDT - Bangladeshi Taka</option>
-                                <option value="LKR">🇱🇰 LKR - Sri Lankan Rupee</option>
-                                <option value="MMK">🇲🇲 MMK - Myanmar Kyat</option>
-                            </optgroup>
-                            
-                            <!-- Middle East & Africa -->
-                            <optgroup label="🌍 Middle East & Africa">
-                                <option value="SAR">🇸🇦 SAR - Saudi Riyal</option>
-                                <option value="AED">🇦🇪 AED - UAE Dirham</option>
-                                <option value="QAR">🇶🇦 QAR - Qatari Riyal</option>
-                                <option value="KWD">🇰🇼 KWD - Kuwaiti Dinar</option>
-                                <option value="BHD">🇧🇭 BHD - Bahraini Dinar</option>
-                                <option value="OMR">🇴🇲 OMR - Omani Rial</option>
-                                <option value="JOD">🇯🇴 JOD - Jordanian Dinar</option>
-                                <option value="ILS">🇮🇱 ILS - Israeli Shekel</option>
-                                <option value="EGP">🇪🇬 EGP - Egyptian Pound</option>
-                                <option value="ZAR">🇿🇦 ZAR - South African Rand</option>
-                                <option value="NGN">🇳🇬 NGN - Nigerian Naira</option>
-                                <option value="KES">🇰🇪 KES - Kenyan Shilling</option>
-                                <option value="GHS">🇬🇭 GHS - Ghanaian Cedi</option>
-                            </optgroup>
-                        </select>
-                    </div>
-                    <button class="btn btn-primary w-100" onclick="convertCurrency()">
-                        <i class="fas fa-sync me-2"></i>Convert
-                    </button>
-                    <div id="convertResult" class="mt-3 text-center" style="font-size:1.3rem; font-weight:600; color:#00d4aa"></div>
-                    <div id="convertError" class="mt-2 text-danger text-center" style="font-size:0.85rem"></div>
-                </div>
-            </div>
         </div>
 
     </div>
@@ -267,101 +147,175 @@
 <script src="/js/darkmode.js"></script>
 <script src="/js/main.js"></script>
 <script>
-    document.getElementById('categoryFilter').addEventListener('change', function(e) {
-        const category = e.target.value;
-        const items = document.querySelectorAll('.transaction-item');
-        items.forEach(item => {
-            if (!category) {
-                item.style.display = 'flex';
-            } else {
-                const itemCategory = item.getAttribute('data-category');
-                item.style.display = itemCategory === category ? 'flex' : 'none';
-            }
+    // ===== shared state and helpers =====
+    let transactions = [];
+    let filteredTransactions = [];
+    let userPreferredCurrency = '<%= (user && user.preferredCurrency) || "INR" %>';
+    
+    // Get currency symbol
+    function getCurrencySymbol(currencyCode) {
+        const symbols = {
+            'INR': '₹',
+            'USD': '$',
+            'EUR': '€',
+            'GBP': '£',
+            'JPY': '¥',
+            'AUD': 'A$',
+            'CAD': 'C$',
+            'CHF': 'CHF',
+            'CNY': '¥',
+            'AED': 'د.إ',
+            'SGD': 'S$',
+            'MYR': 'RM',
+            'THB': '฿',
+            'PKR': '₨',
+            'BDT': '৳',
+            'ZAR': 'R',
+            'MXN': '$',
+            'BRL': 'R$',
+            'KRW': '₩',
+            'HKD': 'HK$'
+        };
+        return symbols[currencyCode] || currencyCode;
+    }
+
+    function formatAmount(val) {
+        const symbol = getCurrencySymbol(userPreferredCurrency);
+        return symbol + parseFloat(val).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    function calculateTotals(data) {
+        let income = 0, expense = 0;
+        data.forEach(t => {
+            if (t.type === 'income') income += t.amount;
+            else expense += t.amount;
         });
+        return { totalIncome: income, totalExpense: expense, balance: income - expense };
+    }
+
+    function renderTotals() {
+        const { totalIncome, totalExpense, balance } = calculateTotals(filteredTransactions.length ? filteredTransactions : transactions);
+        document.querySelector('.stat-card.balance .stat-amount').textContent = formatAmount(balance);
+        document.querySelector('.stat-card.income .stat-amount').textContent = formatAmount(totalIncome);
+        document.querySelector('.stat-card.expense .stat-amount').textContent = formatAmount(totalExpense);
+    }
+
+    function renderTransactions() {
+        const container = document.getElementById('transactionList');
+        const list = (filteredTransactions.length ? filteredTransactions : transactions).slice(0, 10);
+        if (!list || list.length === 0) {
+            container.innerHTML = `
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-receipt fa-3x mb-3"></i>
+                    <p>No transactions yet. Add your first one!</p>
+                    <a href="/expenses/add" class="btn btn-primary">
+                        <i class="fas fa-plus me-1"></i>Add Transaction
+                    </a>
+                </div>`;
+            return;
+        }
+        container.innerHTML = '';
+        list.forEach(exp => {
+            const dateStr = new Date(exp.date || Date.now()).toLocaleDateString();
+            const amountStr = formatAmount(exp.amount);
+            const iconClass = exp.type === 'income' ? 'fa-arrow-up' : 'fa-arrow-down';
+            const bgColor = exp.type === 'income' ? '#e8faf5' : '#fde8e8';
+            const color = exp.type === 'income' ? '#00d4aa' : '#e74c3c';
+
+            const item = document.createElement('div');
+            item.className = 'transaction-item';
+            item.setAttribute('data-category', exp.category || '');
+            item.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <div class="me-3" style="width:40px; height:40px; border-radius:50%; background:${bgColor}; display:flex; align-items:center; justify-content:center;">
+                        <i class="fas ${iconClass}" style="color:${color}"></i>
+                    </div>
+                    <div>
+                        <div class="fw-500">${exp.title || ''}</div>
+                        <small class="text-muted">${exp.category || ''} • ${dateStr}</small>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center">
+                    <span class="${exp.type === 'income' ? 'amount-income' : 'amount-expense'} me-3">
+                        ${(exp.type === 'income' ? '+' : '-')}${amountStr}
+                    </span>
+                    <button onclick="deleteTransaction('${exp._id}')" class="btn btn-sm btn-outline-danger">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>`;
+            container.appendChild(item);
+        });
+    }
+
+    function applyFilter(category) {
+        if (!category) {
+            filteredTransactions = [];
+        } else {
+            filteredTransactions = transactions.filter(t => t.category === category);
+        }
+        renderTotals();
+        renderTransactions();
+    }
+
+    document.getElementById('categoryFilter').addEventListener('change', function(e) {
+        applyFilter(e.target.value);
     });
 
-    // CSV Export
+    // CSV Export that respects current view
     function exportCSV() {
-        const expenses = <%= JSON.stringify(expenses) %>;
-        const user = '<%= user.name %>';
-        
-        let csv = 'Title,Amount,Type,Category,Date,Note\n';
-        expenses.forEach(exp => {
+        const data = filteredTransactions.length ? filteredTransactions : transactions;
+        let csv = 'Title,Amount (' + userPreferredCurrency + '),Type,Category,Date,Note\n';
+        data.forEach(exp => {
             const date = new Date(exp.date).toLocaleDateString();
-            csv += `"${exp.title}","${exp.amount}","${exp.type}","${exp.category}","${date}","${exp.note || ''}"\n`;
+            const amount = parseFloat(exp.amount).toFixed(2);
+            csv += `"${exp.title}","${amount}","${exp.type}","${exp.category}","${date}","${exp.note || ''}"\n`;
         });
-        
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `expenses-${new Date().toISOString().split('T')[0]}.csv`;
+        a.download = `transactions-${new Date().toISOString().split('T')[0]}.csv`;
         a.click();
     }
 
-    // Chart.js - Expense Breakdown by Category
-    const expenses = <%= JSON.stringify(expenses) %>;
-    const categoryData = {};
-    
-    expenses.forEach(exp => {
-        if (exp.type === 'expense') {
-            categoryData[exp.category] = (categoryData[exp.category] || 0) + exp.amount;
-        }
-    });
-    
-    if (Object.keys(categoryData).length > 0) {
-        const ctx = document.getElementById('categoryChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: Object.keys(categoryData),
-                datasets: [{
-                    data: Object.values(categoryData),
-                    backgroundColor: [
-                        '#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0',
-                        '#9966FF', '#FF9F40', '#FF6384', '#C9CBCF'
-                    ],
-                    borderColor: '#fff',
-                    borderWidth: 2
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: true,
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { font: { size: 12 }, padding: 10 }
-                    }
-                }
-            }
-        });
-    }
-
-    async function convertCurrency() {
-        const amount = document.getElementById('convertAmount').value;
-        const currency = document.getElementById('targetCurrency').value;
-        const resultDiv = document.getElementById('convertResult');
-        const errorDiv = document.getElementById('convertError');
-
-        resultDiv.textContent = 'Converting...';
-        errorDiv.textContent = '';
-
+    async function deleteTransaction(id) {
+        if (!confirm('Delete this transaction?')) return;
         try {
-            const response = await fetch(`/api/convert?amount=${amount}&to=${currency}`);
-            const data = await response.json();
-
-            if (data.success) {
-                resultDiv.textContent = `₹${amount} = ${data.converted} ${currency}`;
+            const resp = await fetch(`/api/expenses/${id}`, { method: 'DELETE' });
+            const json = await resp.json();
+            if (json.success) {
+                transactions = transactions.filter(t => t._id !== id);
+                applyFilter(document.getElementById('categoryFilter').value);
             } else {
-                errorDiv.textContent = data.message || 'Conversion failed';
-                resultDiv.textContent = '';
+                alert(json.message || 'Failed to delete');
             }
         } catch (err) {
-            errorDiv.textContent = 'Could not connect. Try again.';
-            resultDiv.textContent = '';
+            console.error('Delete error', err);
+            alert('Unable to delete');
         }
     }
+
+    // Fetch transactions from server
+    async function refreshData() {
+        try {
+            const resp = await fetch('/api/expenses');
+            const json = await resp.json();
+            if (json.success) {
+                transactions = json.expenses;
+                applyFilter(document.getElementById('categoryFilter').value);
+            }
+        } catch (err) {
+            console.error('Error fetching transactions:', err);
+        }
+    }
+
+    // Initialize
+    (async function init() {
+        applyFilter('');
+        renderTotals();
+        renderTransactions();
+        refreshData();
+    })();
 </script>
 </body>
 </html>

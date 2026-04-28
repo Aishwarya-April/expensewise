@@ -314,11 +314,17 @@ body.dark-mode .nav-link:hover {
 body.dark-mode .auth-card,
 body.dark-mode .transaction-card,
 body.dark-mode .converter-card,
-body.dark-mode .stat-card {
+body.dark-mode .stat-card,
+body.dark-mode .card {
     background-color: #2d2d2d !important;
     color: #e0e0e0 !important;
     border: 1px solid #404040;
     transition: background-color 0.3s ease;
+}
+
+body.dark-mode .card h5,
+body.dark-mode .card p {
+    color: #e0e0e0;
 }
 
 body.dark-mode .dashboard-section {
@@ -357,6 +363,17 @@ body.dark-mode .btn-outline-secondary {
 body.dark-mode .btn-outline-secondary:hover {
     background-color: #505050;
     border-color: #505050;
+    color: #fff;
+}
+
+body.dark-mode .btn-outline-danger {
+    color: #ff6b6b;
+    border-color: #8b3333;
+}
+
+body.dark-mode .btn-outline-danger:hover {
+    background-color: #8b3333;
+    border-color: #8b3333;
     color: #fff;
 }
 
@@ -399,6 +416,16 @@ body.dark-mode .btn-primary:hover {
     border-color: #00b894;
 }
 
+body.dark-mode .btn-success {
+    background-color: #27ae60;
+    border-color: #27ae60;
+}
+
+body.dark-mode .btn-success:hover {
+    background-color: #229954;
+    border-color: #229954;
+}
+
 body.dark-mode table {
     color: #e0e0e0;
 }
@@ -410,6 +437,14 @@ body.dark-mode table thead {
 
 body.dark-mode table tbody tr:hover {
     background-color: #3d3d3d;
+}
+
+body.dark-mode canvas {
+    filter: brightness(0.9);
+}
+
+body.dark-mode small {
+    color: #aaa;
 }
 
 /* RESPONSIVE */
